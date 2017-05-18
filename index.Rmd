@@ -7,7 +7,8 @@ output:
     toc: true
     toc_float: true
     number_sections: false
-    code_folding: hide---
+    code_folding: show
+---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -20,28 +21,23 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Translate Dataset
 
-TEMP: For now, just doing first 1,000 rows.
-
 ```{r translate, message=F, warning=F}
 library(tidyverse)
 
-# SBCMBON integrated fish
-url = 'https://portal.edirepository.org/nis/dataviewer?packageid=edi.5.1&entityid=91615b931c54c3aefedd0b048b22344c'
-
+url       = 'https://portal.edirepository.org/nis/dataviewer?packageid=edi.5.1&entityid=91615b931c54c3aefedd0b048b22344c'
 dir_cache = 'cache'
-csv_cache = file.path(dir_cache, 'd.csv')
-csv_temp  = 'data/temp.csv'
+csv_cache = file.path(dir_cache, 'int-fish_91615b931c54c3aefedd0b048b22344c.csv')
+csv_small = 'data/int-fish_1000rows_91615b931c54c3aefedd0b048b22344c.csv'
+csv_big   = '~/Dropbox/mbon/sbc_data/int-fish_91615b931c54c3aefedd0b048b22344c.csv'
 
+# fetch
 if (!file.exists(csv_cache)){
   d = read_csv(url)
   write_csv(d, csv_cache)
 }
 d = read_csv(csv_cache) # s = spec_csv(csv_cache)
 
-# TEMP: get first 1000 rows to start
-d0 = d # TODO: replace d0 with d
-d = head(d, 1000)
-
+# translate
 d2 = d %>% 
   mutate(
     identificationID     = sprintf('%s_%s_%s_%s_%d', site_id, subsite_id, proj_taxon_id, transect_id, replicate_id),
@@ -66,16 +62,27 @@ d2 = d %>%
     ScientificName, taxonID, nameAccordingToID,
     organismQuantity, organismQuantityType)
 
-write_csv(d2, csv_temp)
+# output
+write_csv(d2               , csv_big)
+write_csv(d2 %>% head(1000), csv_small)
 
-d2 %>% 
+# preview
+d2 %>% head(1000) %>%
   DT::datatable()
 ```
+
+
+## Outputs
+
+- **head** (first 1,000 rows; `r file.info(csv_small)[['size']] /1e3 %>% round(1)` KB): [Github: `r basename(csv_small)`](https://github.com/marinebon/sbc-datasets/blob/gh-pages/data/`r basename(csv_small)`).
+
+- **full** (all `r nrow(d) %>% scales::comma()` rows; `r file.info(csv_big)[['size']] /1e6` MB): [Dropbox: `r basename(csv_big)`](https://www.dropbox.com/s/kk0z6ml0ytjk69x/int-fish_91615b931c54c3aefedd0b048b22344c.csv?dl=0)
+
 
 ## Issues
 
 Notes:
 
 - `site_name` is integer
-- `subsite_name` has `r sum(is.na(d0$subsite_name)) %>% scales::comma()` NAs
+- `subsite_name` has `r sum(is.na(d$subsite_name)) %>% scales::comma()` NAs of `r nrow(d) %>% scales::comma()` rows
 
