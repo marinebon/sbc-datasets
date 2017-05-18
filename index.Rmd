@@ -1,0 +1,81 @@
+---
+title: "Translate Dataset from DataOne to OBIS columns"
+author: "Ben Best <ben@ecoquants.com>"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: false
+    code_folding: hide---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background
+
+* dataset: [Santa Barbara Channel Marine BON: Integrated fish | Environmental Data Initiative](https://portal.edirepository.org/nis/metadataviewer?packageid=edi.5.1)
+* column mappings: [Vocab mappings - Google Sheets](https://docs.google.com/spreadsheets/d/1GlUWijzR-d7wM97Yv5p9VSCVdlCXSXdkot4MR0dl4M0/edit#gid=0)
+
+## Translate Dataset
+
+TEMP: For now, just doing first 1,000 rows.
+
+```{r translate, message=F, warning=F}
+library(tidyverse)
+
+# SBCMBON integrated fish
+url = 'https://portal.edirepository.org/nis/dataviewer?packageid=edi.5.1&entityid=91615b931c54c3aefedd0b048b22344c'
+
+dir_cache = 'cache'
+csv_cache = file.path(dir_cache, 'd.csv')
+csv_temp  = 'data/temp.csv'
+
+if (!file.exists(csv_cache)){
+  d = read_csv(url)
+  write_csv(d, csv_cache)
+}
+d = read_csv(csv_cache) # s = spec_csv(csv_cache)
+
+# TEMP: get first 1000 rows to start
+d0 = d # TODO: replace d0 with d
+d = head(d, 1000)
+
+d2 = d %>% 
+  mutate(
+    identificationID     = sprintf('%s_%s_%s_%s_%d', site_id, subsite_id, proj_taxon_id, transect_id, replicate_id),
+    Location             = sprintf('%s_%s', site_name, subsite_name),
+    decimalLatitude      = latitude,
+    decimalLongitude     = longitude,
+    eventDate            = date,
+    eventRemarks         = data_source,
+    samplingProtocol     = sprintf('%s -- %s', sample_method, sample_subtype),
+    sampleSizeValue      = ifelse(is.na(height),           area,  area * height),
+    sampleSizeUnit       = ifelse(is.na(height), 'square meter', 'square meter'),
+    ScientificName       = taxon_name,
+    taxonID              = auth_taxon_id,
+    nameAccordingToID    = auth_name,
+    organismQuantity     = count,
+    organismQuantityType = "individual") %>%
+  select(
+    identificationID, 
+    Location, decimalLatitude, decimalLongitude, 
+    eventDate, eventRemarks,
+    samplingProtocol, sampleSizeValue, sampleSizeUnit,
+    ScientificName, taxonID, nameAccordingToID,
+    organismQuantity, organismQuantityType)
+
+write_csv(d2, csv_temp)
+
+d2 %>% 
+  DT::datatable()
+```
+
+## Issues
+
+Notes:
+
+- `site_name` is integer
+- `subsite_name` has `r sum(is.na(d0$subsite_name)) %>% scales::comma()` NAs
+
