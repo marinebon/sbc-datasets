@@ -4,7 +4,7 @@ url       = 'https://portal.edirepository.org/nis/dataviewer?packageid=edi.5.1&e
 dir_cache = 'data'
 csv_cache = file.path(dir_cache, 'int-fish_91615b931c54c3aefedd0b048b22344c.csv')
 csv_small = 'data/int-fish_1000rows_91615b931c54c3aefedd0b048b22344c.csv'
-#csv_big   = '~/Dropbox/mbon/sbc_data/int-fish_91615b931c54c3aefedd0b048b22344c.csv'
+
 
 # fetch
 if (!file.exists(csv_cache)){
@@ -42,9 +42,8 @@ d2 = d %>%
     organismQuantity, occurrenceStatus, organismQuantityType)
 
 # output
-#write_csv(d2               , csv_big)
-write_csv(d2 %>% head(1000), csv_small)
+write_csv(d2, csv_small)
 
 # preview
-d2 %>% head(1000) %>%
+d2 %>% 
   DT::datatable()
